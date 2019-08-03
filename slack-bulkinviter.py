@@ -2,14 +2,7 @@ import sys
 import getopt
 from slacker import Slacker, Error
 
-# Default values
-apikey = "apikey.txt"
-channel = ""
-oname_file = ""
-filter_file = ""
 DEBUG = True
-do_plan = False
-filter_dict = {}
 
 
 # Print usage
@@ -18,8 +11,8 @@ def usage(name):
 
 
 # Get Slack channel ID
-def get_slack_channel_id(c):
-    response = slack.channels.list()
+def get_slack_channel_id(s, c):
+    response = s.channels.list()
     channels = [d for d in response.body['channels'] if d['name'] == c]
     if not len(channels):
         print("Cannot find channel")
@@ -29,8 +22,16 @@ def get_slack_channel_id(c):
     return channel_id
 
 
-# Main
-if __name__ == '__main__':
+# Main method
+def main():
+
+    # Default values
+    apikey = "apikey.txt"
+    channel = ""
+    oname_file = ""
+    filter_file = ""
+    do_plan = False
+    filter_dict = {}
 
     # Get command line arguments
     try:
@@ -104,23 +105,31 @@ if __name__ == '__main__':
             sys.exit(1)
 
     # Get channel id from name
-    channel_id = get_slack_channel_id(channel)
+    channel_id = get_slack_channel_id(slack, channel)
 
     # Get users list
     response = slack.users.list()
-    users = [(u['id'], u['name'], u['profile']['real_name'], u['is_bot']) for u in response.body['members']]
+    users = [(u['id'], u['name'], u['profile']['real_name'], u['is_bot'],
+              u['deleted'], u['is_restricted'], u['is_ultra_restricted']) for u in response.body['members']]
 
     # Invite users to slack channel
-    for user_id, user_name, real_name, is_bot in users:
+    for user_id, user_name, real_name, is_bot, is_deleted, is_restricted, is_ultra_restricted in users:
         if oname_file:
             ofile_h.write("{} {}\n".format(user_name, real_name))
         try:
-            if not is_bot and user_name not in filter_dict:
+            if not is_deleted and \
+                    not is_restricted and \
+                    not is_ultra_restricted and \
+                    not is_bot and \
+                    user_name not in filter_dict:
                 if not do_plan:
                     slack.channels.invite(channel_id, user_id)
                 else:
-                    print("PLAN: slack.channels.invite({}, {}) -> {} {} {}".format(channel_id, user_id, user_name,
-                                                                                real_name, is_bot))
+                    print("PLAN: slack.channels.invite({}, {}) -> {} {} {} {} {} {}".format(channel_id, user_id,
+                                                                                            user_name, real_name,
+                                                                                            is_bot, is_deleted,
+                                                                                            is_restricted,
+                                                                                            is_ultra_restricted))
         except Error as e:
             code = e.args[0]
             if code == "already_in_channel":
@@ -128,5 +137,9 @@ if __name__ == '__main__':
             elif code in ('cant_invite_self', 'cant_invite', 'user_is_ultra_restricted'):
                 print("Skipping user {} ('{}')".format(user_name, code))
             else:
-                raise
+                print("UNKNOWN ERROR: unable to invite {} to channel {} with error code {}".format(user_name,
+                                                                                                   channel, code))
 
+
+if __name__ == '__main__':
+    main()
