@@ -18,4 +18,8 @@ TODO:
    - -f|-filter <file> - specify filter file
    - -w|-white - white list of names (cannot specify both black and white lists)
    - -b|-black - black list of names (cannot specify both black and white lists)
+   - -p|-plan - plan mode, make no slack modifications
+   - -h|-help - print help
 
+What's New:
+* 200127 - Fixed issue with unicode characters parsed from real_name in data feed, need to look at more robust solution
