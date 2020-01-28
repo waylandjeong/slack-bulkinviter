@@ -115,7 +115,7 @@ def main():
     # Invite users to slack channel
     for user_id, user_name, real_name, is_bot, is_deleted, is_restricted, is_ultra_restricted in users:
         if oname_file:
-            ofile_h.write("{} {}\n".format(user_name, real_name))
+            ofile_h.write("{} {}\n".format(user_name, real_name.encode('utf-8')))
         try:
             if not is_deleted and \
                     not is_restricted and \
@@ -125,9 +125,12 @@ def main():
                 if not do_plan:
                     slack.channels.invite(channel_id, user_id)
                 else:
-                    print("PLAN: slack.channels.invite({}, {}) -> {} {} {} {} {} {}".format(channel_id, user_id,
-                                                                                            user_name, real_name,
-                                                                                            is_bot, is_deleted,
+                    print("PLAN: slack.channels.invite({}, {}) -> {} {} {} {} {} {}".format(channel_id, 
+                                                                                            user_id,
+                                                                                            user_name, 
+                                                                                            real_name.encode('utf-8'),
+                                                                                            is_bot, 
+                                                                                            is_deleted,
                                                                                             is_restricted,
                                                                                             is_ultra_restricted))
         except Error as e:
